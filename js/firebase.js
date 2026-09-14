@@ -1,23 +1,73 @@
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js';
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js';
-import {
-  getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
-  query, orderBy, limit, where, serverTimestamp, writeBatch, Bytes
-} from 'https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js';
 import { firebaseConfig, FORCE_DEMO_MODE } from './firebase-config.js';
 
-const configured = firebaseConfig.apiKey && !firebaseConfig.apiKey.startsWith('PASTE_') && !firebaseConfig.apiKey.startsWith('YOUR_')
-  && firebaseConfig.projectId && !firebaseConfig.projectId.startsWith('YOUR_');
-export const demoMode = FORCE_DEMO_MODE || !configured;
+const configured = Boolean(
+  firebaseConfig?.apiKey &&
+  !String(firebaseConfig.apiKey).startsWith('PASTE_') &&
+  !String(firebaseConfig.apiKey).startsWith('YOUR_') &&
+  firebaseConfig?.projectId &&
+  !String(firebaseConfig.projectId).startsWith('YOUR_')
+);
 
-let app=null,auth=null,db=null;
-if(!demoMode){
-  app=initializeApp(firebaseConfig);
-  auth=getAuth(app);
-  db=getFirestore(app);
+export const demoMode = Boolean(FORCE_DEMO_MODE || !configured);
+export let firebaseInitError = null;
+
+export let app = null;
+export let auth = null;
+export let db = null;
+
+export let signInWithEmailAndPassword = null;
+export let signOut = null;
+export let onAuthStateChanged = null;
+
+export let collection = null;
+export let doc = null;
+export let getDoc = null;
+export let getDocs = null;
+export let setDoc = null;
+export let addDoc = null;
+export let updateDoc = null;
+export let deleteDoc = null;
+export let query = null;
+export let orderBy = null;
+export let limit = null;
+export let where = null;
+export let serverTimestamp = null;
+export let writeBatch = null;
+export let Bytes = null;
+
+if (!demoMode) {
+  try {
+    const [appSdk, authSdk, firestoreSdk] = await Promise.all([
+      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js'),
+      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js')
+    ]);
+
+    app = appSdk.initializeApp(firebaseConfig);
+    auth = authSdk.getAuth(app);
+    db = firestoreSdk.getFirestore(app);
+
+    signInWithEmailAndPassword = authSdk.signInWithEmailAndPassword;
+    signOut = authSdk.signOut;
+    onAuthStateChanged = authSdk.onAuthStateChanged;
+
+    collection = firestoreSdk.collection;
+    doc = firestoreSdk.doc;
+    getDoc = firestoreSdk.getDoc;
+    getDocs = firestoreSdk.getDocs;
+    setDoc = firestoreSdk.setDoc;
+    addDoc = firestoreSdk.addDoc;
+    updateDoc = firestoreSdk.updateDoc;
+    deleteDoc = firestoreSdk.deleteDoc;
+    query = firestoreSdk.query;
+    orderBy = firestoreSdk.orderBy;
+    limit = firestoreSdk.limit;
+    where = firestoreSdk.where;
+    serverTimestamp = firestoreSdk.serverTimestamp;
+    writeBatch = firestoreSdk.writeBatch;
+    Bytes = firestoreSdk.Bytes;
+  } catch (error) {
+    firebaseInitError = error;
+    console.error('Nox Vault: Firebase SDK failed to initialize.', error);
+  }
 }
-export {
-  app,auth,db,signInWithEmailAndPassword,signOut,onAuthStateChanged,
-  collection,doc,getDoc,getDocs,setDoc,addDoc,updateDoc,deleteDoc,query,orderBy,limit,where,
-  serverTimestamp,writeBatch,Bytes
-};

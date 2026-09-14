@@ -99,7 +99,8 @@ function renderSessionView(){const s=S.activeSession;if(!s){routeTo('sessions');
     </aside>
   </div>`;
   hydrateSessionFrames();
-  $$('[data-tab]',page).forEach(b=>b.onclick=e=>{if(e.target.closest('[data-close-tab]'))return;activateTab(b.dataset.tab)});$$('[data-close-tab]',page).forEach(b=>b.onclick=e=>{e.stopPropagation();closeTab(b.dataset.closeTab)});$$('[data-add-tab]',page).forEach(b=>b.onclick=addTabModal);$('[data-go]',page).onclick=()=>navigateCurrent($('#session-url').value);$('#session-url').onkeydown=e=>{if(e.key==='Enter')navigateCurrent(e.currentTarget.value)};$('[data-reload]',page).onclick=()=>reloadCurrent();$('[data-save-tab]',page).onclick=()=>current&&saveItemModal(current);$('[data-save-all]',page).onclick=saveAllTabsModal;$('[data-suspend-all]',page).onclick=()=>suspendAllTabs();$('[data-metadata]',page).onclick=()=>current&&metadataIntoTab(current);$('[data-note-tab]',page).onclick=()=>current&&noteModal('note',{title:`Note: ${current.title}`,body:current.url});$('[data-pin-tab]',page).onclick=()=>{if(current){current.pinned=!current.pinned;saveActiveSession(false);renderSessionView()}};$('[data-toggle-active]',page)?.addEventListener('click',()=>current&&(current.status==='active'?suspendTab(current.id):activateTab(current.id)));$$('[data-activate]',page).forEach(b=>b.onclick=()=>activateTab(b.dataset.activate));$('[data-limit-settings]',page).onclick=()=>routeTo('settings');
+  $$('[data-tab]',page).forEach(b=>b.onclick=e=>{if(e.target.closest('[data-close-tab]'))return;activateTab(b.dataset.tab)});$$('[data-close-tab]',page).forEach(b=>b.onclick=e=>{e.stopPropagation();closeTab(b.dataset.closeTab)});$$('[data-add-tab]',page).forEach(b=>b.onclick=addTabModal);$('[data-go]',page).onclick=()=>navigateCurrent($('#session-url').value);$('#session-url').onkeydown=e=>{if(e.key==='Enter')navigateCurrent(e.currentTarget.value)};$('[data-back]',page).onclick=()=>{const f=S.tabFrames.get(S.currentTabId);try{if(f?.tagName==='IFRAME')f.contentWindow.history.back()}catch{}};
+$('[data-reload]',page).onclick=()=>reloadCurrent();$('[data-save-tab]',page).onclick=()=>current&&saveItemModal(current);$('[data-save-all]',page).onclick=saveAllTabsModal;$('[data-suspend-all]',page).onclick=()=>suspendAllTabs();$('[data-metadata]',page).onclick=()=>current&&metadataIntoTab(current);$('[data-note-tab]',page).onclick=()=>current&&noteModal('note',{title:`Note: ${current.title}`,body:current.url});$('[data-pin-tab]',page).onclick=()=>{if(current){current.pinned=!current.pinned;saveActiveSession(false);renderSessionView()}};$('[data-toggle-active]',page)?.addEventListener('click',()=>current&&(current.status==='active'?suspendTab(current.id):activateTab(current.id)));$$('[data-activate]',page).forEach(b=>b.onclick=()=>activateTab(b.dataset.activate));$('[data-limit-settings]',page).onclick=()=>routeTo('settings');
 }
 function hydrateSessionFrames(){const s=S.activeSession,stage=$('#browser-stage');if(!s||!stage)return;for(const [id,el] of [...S.tabFrames]){const t=byId(s.tabs,id);if(!t||t.status!=='active'){try{el.src='about:blank';el.remove()}catch{}S.tabFrames.delete(id)}}for(const t of s.tabs.filter(x=>x.status==='active')){if(!S.tabFrames.has(t.id)){let el;if(isDirectVideo(t.mediaUrl||t.url)||isHls(t.mediaUrl||t.url)){el=document.createElement('video');el.controls=true;el.preload='auto';el.src=t.mediaUrl||t.url}else{el=document.createElement('iframe');el.allow='autoplay; fullscreen; picture-in-picture';el.referrerPolicy='no-referrer';el.src=t.embedUrl||t.url||'about:blank'}el.dataset.tabId=t.id;el.style.display='none';S.tabFrames.set(t.id,el)}}stage.innerHTML='';for(const [id,el] of S.tabFrames){el.style.display=id===S.currentTabId?'block':'none';stage.append(el)}if(!S.currentTabId||!S.tabFrames.has(S.currentTabId)){stage.innerHTML=`<div class="browser-placeholder"><div><img src="./assets/nox-mark.svg" width="70" alt=""><h2>Tab suspended</h2><p>Activate this tab to preload it. Nox Vault keeps only ${S.settings.maxActiveTabs} active tabs mounted at once.</p></div></div>`}}
 async function activateTab(id){const s=S.activeSession,t=byId(s?.tabs,id);if(!t)return;S.currentTabId=id;if(t.status!=='active'){const active=s.tabs.filter(x=>x.status==='active');if(active.length>=S.settings.maxActiveTabs){const candidates=active.filter(x=>!x.pinned&&x.id!==id).sort((a,b)=>(a.lastActiveAt||0)-(b.lastActiveAt||0));const victim=candidates[0]||active.find(x=>x.id!==id);if(victim)victim.status='suspended'}t.status='active'}t.lastActiveAt=Date.now();await saveActiveSession(false);renderSessionView()}
@@ -253,9 +254,101 @@ function render(){const {name,id}=parseRoute();S.route=name;$$('#main-nav a,.sec
 function resetIdle(){S.lastActivity=Date.now();clearTimeout(S.idleTimer);if(!S.settings?.inactivityMinutes)return;S.idleTimer=setTimeout(()=>{if(backend.user)lockAll({decoy:S.settings.decoyOnLock})},Number(S.settings.inactivityMinutes)*60*1000)}
 function handleActivity(){if(Date.now()-S.lastActivity>5000)resetIdle()}
 
-async function initAuthed(){authScreen.classList.add('hidden');appShell.classList.remove('hidden');appShell.setAttribute('aria-hidden','false');await loadAppData();if(location.hash==='#unlock'){const ret=sessionStorage.getItem('nox_return_hash')||'#dashboard';history.replaceState(null,'',ret)}refreshVaultSwitcher();render();resetIdle()}
-$('#login-form').onsubmit=async e=>{e.preventDefault();const b=e.submitter,msg=$('#login-message');setBusy(b,true,'Signing in…');msg.textContent='';try{await backend.login($('#login-email').value,$('#login-password').value);await initAuthed()}catch(err){msg.textContent=err.message}finally{setBusy(b,false)}};
-backend.onAuth(async(user,error)=>{if(error)toast(error.message,'error');if(user)await initAuthed();else{appShell.classList.add('hidden');authScreen.classList.remove('hidden')}});
-window.addEventListener('hashchange',render);vaultSwitcher.onchange=e=>selectVault(e.target.value);activeLimitTop.onchange=e=>updateActiveLimit(Number(e.target.value));$('#lock-btn').onclick=()=>lockVault(S.currentVaultId,{decoy:false});$('#panic-btn').onclick=panic;$('#global-search').onkeydown=e=>{if(e.key==='Enter'){S.search=e.currentTarget.value;routeTo('library')}};window.addEventListener('keydown',e=>{if(S.settings&&shortcutMatches(e,S.settings.panicShortcut||'Ctrl+Shift+Space')){e.preventDefault();panic()}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();$('#global-search').focus()}},true);['mousemove','mousedown','keydown','touchstart','scroll'].forEach(ev=>addEventListener(ev,handleActivity,{passive:true}));window.addEventListener('paste',async e=>{if(parseRoute().name!=='images'||!S.unlocked.has(S.currentVaultId))return;const file=[...e.clipboardData.files].find(f=>f.type.startsWith('image/'));if(file){e.preventDefault();await uploadImageFile(file)}});
-if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+let authInitInProgress=false;
+async function initAuthed(){
+  if(authInitInProgress)return;
+  authInitInProgress=true;
+  try{
+    authScreen.classList.add('hidden');
+    appShell.classList.remove('hidden');
+    appShell.setAttribute('aria-hidden','false');
+    await loadAppData();
+    if(location.hash==='#unlock'){
+      const ret=sessionStorage.getItem('nox_return_hash')||'#dashboard';
+      history.replaceState(null,'',ret);
+    }
+    refreshVaultSwitcher();
+    render();
+    resetIdle();
+  }catch(error){
+    console.error('Nox Vault startup failed:',error);
+    appShell.classList.add('hidden');
+    authScreen.classList.remove('hidden');
+    const msg=$('#login-message');
+    if(msg)msg.textContent=`Signed in, but Nox Vault could not load: ${error.message||error}`;
+    toast(error.message||'Nox Vault could not load.','error');
+  }finally{
+    authInitInProgress=false;
+  }
+}
+
+$('#login-form').onsubmit=async e=>{
+  e.preventDefault();
+  const b=e.submitter,msg=$('#login-message');
+  setBusy(b,true,'Signing in…');
+  msg.textContent='';
+  try{
+    // onAuth() below is the single place that starts the app after a successful login.
+    await backend.login($('#login-email').value,$('#login-password').value);
+  }catch(err){
+    console.error('Nox Vault login failed:',err);
+    msg.textContent=err.message||String(err);
+  }finally{
+    setBusy(b,false);
+  }
+};
+
+backend.onAuth(async(user,error)=>{
+  if(error){
+    console.error('Nox Vault authentication error:',error);
+    const msg=$('#login-message');
+    if(msg)msg.textContent=error.message||String(error);
+    toast(error.message||'Authentication error.','error');
+  }
+  if(user){
+    await initAuthed();
+  }else{
+    appShell.classList.add('hidden');
+    authScreen.classList.remove('hidden');
+  }
+});
+
+window.addEventListener('hashchange',render);
+vaultSwitcher.onchange=e=>selectVault(e.target.value);
+activeLimitTop.onchange=e=>updateActiveLimit(Number(e.target.value));
+$('#lock-btn').onclick=()=>lockVault(S.currentVaultId,{decoy:false});
+$('#panic-btn').onclick=panic;
+$('#global-search').onkeydown=e=>{if(e.key==='Enter'){S.search=e.currentTarget.value;routeTo('library')}};
+window.addEventListener('keydown',e=>{
+  if(S.settings&&shortcutMatches(e,S.settings.panicShortcut||'Ctrl+Shift+Space')){
+    e.preventDefault();
+    panic();
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){
+    e.preventDefault();
+    $('#global-search').focus();
+  }
+},true);
+['mousemove','mousedown','keydown','touchstart','scroll'].forEach(ev=>addEventListener(ev,handleActivity,{passive:true}));
+window.addEventListener('paste',async e=>{
+  if(parseRoute().name!=='images'||!S.unlocked.has(S.currentVaultId))return;
+  const file=[...e.clipboardData.files].find(f=>f.type.startsWith('image/'));
+  if(file){
+    e.preventDefault();
+    await uploadImageFile(file);
+  }
+});
+
+// Replace any older cache-intercepting service worker with the reset worker.
+// The reset worker clears old Nox Vault caches and does not intercept requests.
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}).then(reg=>{
+    reg.update().catch(()=>{});
+  }).catch(error=>{
+    console.warn('Nox Vault service-worker reset could not register:',error);
+  });
+}
+if('caches' in window){
+  caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('nox-vault')).map(k=>caches.delete(k)))).catch(()=>{});
+}
 if(backend.demoMode)toast('Demo mode is active. Configure Firebase to use the real backend.');

@@ -1,5 +1,22 @@
-const CACHE='nox-vault-shell-v2-hotfix-20260914';
-const ASSETS=['./','./index.html','./decoy.html','./css/app.css','./css/decoy.css','./js/app.js','./js/backend.js','./js/firebase.js','./js/firebase-config.js','./js/utils.js','./assets/nox-mark.svg','./assets/nox-logo.svg','./manifest.webmanifest'];
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
-self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url);if(u.origin!==location.origin)return;e.respondWith(fetch(e.request).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));return r;}).catch(()=>caches.match(e.request)));});
+/*
+  Nox Vault service-worker reset.
+  This intentionally does NOT intercept requests or cache the app shell.
+  It replaces older caching service workers so stale JavaScript cannot block login.
+*/
+const RESET_VERSION = 'nox-vault-reset-v3-20260914';
+
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    try {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(key => caches.delete(key)));
+    } catch (error) {
+      console.warn(RESET_VERSION, 'cache cleanup failed', error);
+    }
+    await self.clients.claim();
+  })());
+});

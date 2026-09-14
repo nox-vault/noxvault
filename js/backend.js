@@ -1,5 +1,5 @@
 import {
-  demoMode,auth,db,signInWithEmailAndPassword,signOut,onAuthStateChanged,
+  demoMode,firebaseInitError,auth,db,signInWithEmailAndPassword,signOut,onAuthStateChanged,
   collection,doc,getDoc,getDocs,setDoc,updateDoc,deleteDoc,serverTimestamp,writeBatch,Bytes
 } from './firebase.js';
 import { OWNER_UID } from './firebase-config.js';
@@ -30,6 +30,36 @@ function loadDemo(){let x;try{x=JSON.parse(localStorage.getItem(DEMO_KEY)||'null
 function saveDemo(x){localStorage.setItem(DEMO_KEY,JSON.stringify(x))}
 let demo=demoMode?loadDemo():null;
 let currentUser=demoMode?demo.user:null;
+
+
+function firebaseReadyGuard(){
+  if(demoMode) return;
+  if(firebaseInitError) {
+    throw new Error('Firebase could not load. Check your internet connection and Firebase web configuration.');
+  }
+  if(!auth || !db || !signInWithEmailAndPassword || !onAuthStateChanged) {
+    throw new Error('Firebase did not initialize correctly. Verify web/js/firebase-config.js.');
+  }
+}
+
+function friendlyAuthError(error){
+  const code=error?.code||'';
+  const map={
+    'auth/invalid-credential':'Incorrect email or password.',
+    'auth/invalid-login-credentials':'Incorrect email or password.',
+    'auth/user-not-found':'Incorrect email or password.',
+    'auth/wrong-password':'Incorrect email or password.',
+    'auth/invalid-email':'Enter a valid email address.',
+    'auth/user-disabled':'This Firebase Authentication user is disabled.',
+    'auth/too-many-requests':'Too many login attempts. Wait a little and try again.',
+    'auth/network-request-failed':'Firebase could not be reached. Check your internet connection.',
+    'auth/api-key-not-valid.-please-pass-a-valid-api-key.':'The Firebase API key is invalid. Check web/js/firebase-config.js.',
+    'auth/unauthorized-domain':'This GitHub Pages domain is not authorized in Firebase Authentication.'
+  };
+  if(map[code]) return new Error(map[code]);
+  const message=error?.message ? String(error.message).replace(/^Firebase:\s*/,'') : 'Firebase sign-in failed.';
+  return new Error(message);
+}
 
 function ownerGuard(user){
   if(!user)throw new Error('Not signed in');
@@ -151,11 +181,41 @@ function parsePageMetadata(html,url,base){
 export const backend={
   demoMode,
   onAuth(cb){
-    if(demoMode){setTimeout(()=>cb(currentUser),0);return()=>{}};
-    return onAuthStateChanged(auth,u=>{try{if(u)ownerGuard(u);currentUser=u;cb(u)}catch(e){signOut(auth);cb(null,e)}});
+    if(demoMode){setTimeout(()=>cb(currentUser),0);return()=>{}}
+    try{
+      firebaseReadyGuard();
+      return onAuthStateChanged(auth,u=>{
+        try{
+          if(u) ownerGuard(u);
+          currentUser=u;
+          cb(u);
+        }catch(e){
+          signOut(auth).catch(()=>{});
+          cb(null,e);
+        }
+      },err=>cb(null,friendlyAuthError(err)));
+    }catch(error){
+      setTimeout(()=>cb(null,error),0);
+      return()=>{};
+    }
   },
-  async login(email,password){if(demoMode){currentUser=demo.user;return currentUser}const cred=await signInWithEmailAndPassword(auth,email,password);ownerGuard(cred.user);currentUser=cred.user;return currentUser},
-  async logout(){if(demoMode){currentUser=null;return}await signOut(auth)},
+  async login(email,password){
+    if(demoMode){currentUser=demo.user;return currentUser}
+    firebaseReadyGuard();
+    try{
+      const cred=await signInWithEmailAndPassword(auth,email,password);
+      ownerGuard(cred.user);
+      currentUser=cred.user;
+      return currentUser;
+    }catch(error){
+      throw friendlyAuthError(error);
+    }
+  },
+  async logout(){
+    if(demoMode){currentUser=null;return}
+    firebaseReadyGuard();
+    await signOut(auth);
+  },
   get user(){return currentUser},
 
   async getSettings(){if(demoMode)return {...defaultSettings,...demo.settings};const ref=doc(db,...userRoot(),'settings','app');const s=await getDoc(ref);if(!s.exists()){await setDoc(ref,defaultSettings);return {...defaultSettings}}return {...defaultSettings,...s.data()}},
