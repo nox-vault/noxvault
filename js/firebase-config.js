@@ -2,11 +2,11 @@
 // Project ID and owner UID are already filled in for your project.
 // Paste the remaining values from Firebase Console -> Project settings -> Your apps -> Web app.
 export const firebaseConfig = {
-  apiKey: "PASTE_YOUR_FIREBASE_API_KEY",
+  apiKey: "AIzaSyDDwc6PADH0GXQOmowvoxqyTWQ8bhqZ1Jo",
   authDomain: "nxvlt-d69de.firebaseapp.com",
   projectId: "nxvlt-d69de",
-  messagingSenderId: "PASTE_YOUR_MESSAGING_SENDER_ID",
-  appId: "PASTE_YOUR_APP_ID"
+  messagingSenderId: "780037732427",
+  appId: "1:780037732427:web:beb59eb82720d6665b35ce"
 };
 
 // Single allowed Firebase Authentication owner.
