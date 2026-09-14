@@ -15,7 +15,7 @@ export const firebaseConfig = {
 // Paste the Firebase Authentication UID of the single owner account here.
 // The same UID must replace YOUR_OWNER_UID in firestore.rules and storage.rules,
 // and be placed in functions/.env as OWNER_UID=...
-export const OWNER_UID = "YOUR_OWNER_UID";
+export const OWNER_UID = "BVDB5whKhLcRdZyS6TMFRYYnkG82";
 
 // If true, the app runs locally using localStorage instead of Firebase.
 // Useful for previewing the interface before Firebase setup.
