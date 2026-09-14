@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Nox Vault Diagnostics</title>
+  <style>
+    body{font:15px system-ui;background:#071120;color:#eaf2ff;margin:0;padding:32px}.card{max-width:760px;margin:auto;background:#0e1a2b;border:1px solid #233b5d;border-radius:16px;padding:24px}h1{margin-top:0}.row{display:flex;justify-content:space-between;gap:20px;padding:10px 0;border-bottom:1px solid #1b2d47}.ok{color:#72e6a6}.bad{color:#ff7d8d}.muted{color:#8fa7c7}code{word-break:break-all}a{color:#72b7ff}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Nox Vault diagnostics</h1>
+    <p class="muted">Build 20260914-1735-v5. This page does not display your Firebase API key or password.</p>
+    <div id="results">Running checks…</div>
+    <p><a href="./">Return to Nox Vault</a></p>
+  </div>
+  <script type="module">
+    const root=document.querySelector('#results');
+    const row=(name,value,ok=true)=>`<div class="row"><span>${name}</span><strong class="${ok?'ok':'bad'}">${value}</strong></div>`;
+    try{
+      const cfg=await import('./js/firebase-config.js?v=20260914-1735');
+      const fb=await import('./js/firebase-v5.js?v=20260914-1735');
+      const configured=Boolean(cfg.firebaseConfig?.apiKey && !String(cfg.firebaseConfig.apiKey).startsWith('PASTE_') && cfg.firebaseConfig?.projectId);
+      root.innerHTML=[
+        row('JavaScript modules','Loaded',true),
+        row('Firebase config',configured?'Configured':'Incomplete',configured),
+        row('Project ID',cfg.firebaseConfig?.projectId||'Missing',cfg.firebaseConfig?.projectId==='nxvlt-d69de'),
+        row('Owner UID',cfg.OWNER_UID?'Present':'Missing',Boolean(cfg.OWNER_UID)),
+        row('Demo mode',String(fb.demoMode),!fb.demoMode),
+        row('Firebase SDK',fb.firebaseInitError?'Failed':'Initialized',!fb.firebaseInitError),
+        row('Auth object',fb.auth?'Ready':'Unavailable',Boolean(fb.auth)||fb.demoMode),
+        row('Firestore object',fb.db?'Ready':'Unavailable',Boolean(fb.db)||fb.demoMode)
+      ].join('') + (fb.firebaseInitError?`<p class="bad"><code>${String(fb.firebaseInitError.message||fb.firebaseInitError)}</code></p>`:'');
+    }catch(error){
+      root.innerHTML=row('Diagnostics','Failed',false)+`<p class="bad"><code>${String(error?.stack||error)}</code></p>`;
+    }
+  </script>
+</body>
+</html>
