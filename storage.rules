@@ -3,7 +3,7 @@ service firebase.storage {
   match /b/{bucket}/o {
     function isOwner(userId) {
       return request.auth != null
-        && request.auth.uid == "YOUR_OWNER_UID"
+        && request.auth.uid == "BVDB5whKhLcRdZyS6TMFRYYnkG82"
         && request.auth.uid == userId;
     }
 
