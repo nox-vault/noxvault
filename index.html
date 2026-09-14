@@ -6,9 +6,10 @@
   <meta name="theme-color" content="#071120" />
   <meta name="referrer" content="no-referrer" />
   <title>Nox Vault</title>
+  <meta name="nox-build" content="20260914-1701-nosw" />
   <link rel="icon" href="./assets/nox-mark.svg" type="image/svg+xml" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./css/app.css" />
+  <link rel="stylesheet" href="./css/app.css?v=20260914-1701" />
 </head>
 <body>
   <noscript>Nox Vault requires JavaScript.</noscript>
@@ -75,6 +76,37 @@
     </div>
   </template>
 
-  <script type="module" src="./js/app.js"></script>
+  <script type="module">
+    // Nox Vault build 2026-09-14 17:01 — service workers are intentionally disabled.
+    // Remove any older Nox Vault worker/cache first, then load uniquely named app modules.
+    const build = '20260914-1701';
+    const base = new URL('./', location.href).href;
+    let removedOldWorker = false;
+
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const registration of registrations) {
+          if (registration.scope.startsWith(base)) {
+            removedOldWorker = (await registration.unregister()) || removedOldWorker;
+          }
+        }
+      }
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.filter(k => k.startsWith('nox-vault')).map(k => caches.delete(k)));
+      }
+    } catch (error) {
+      console.warn('Nox Vault cache cleanup warning:', error);
+    }
+
+    // If this page was still controlled by the old worker, reload once after unregistering it.
+    if ((navigator.serviceWorker?.controller || removedOldWorker) && sessionStorage.getItem('nox-nosw-reloaded') !== build) {
+      sessionStorage.setItem('nox-nosw-reloaded', build);
+      location.reload();
+    } else {
+      await import(`./js/app-v4.js?v=${build}`);
+    }
+  </script>
 </body>
 </html>

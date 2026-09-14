@@ -1,22 +1,20 @@
 /*
-  Nox Vault service-worker reset.
-  This intentionally does NOT intercept requests or cache the app shell.
-  It replaces older caching service workers so stale JavaScript cannot block login.
+  Nox Vault retired service worker.
+  Current Nox Vault does NOT use a service worker.
+  If an older installation checks this URL for an update, this worker immediately
+  clears Nox Vault caches and unregisters itself.
 */
-const RESET_VERSION = 'nox-vault-reset-v3-20260914';
-
-self.addEventListener('install', () => {
-  self.skipWaiting();
-});
-
+self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     try {
       const keys = await caches.keys();
-      await Promise.all(keys.map(key => caches.delete(key)));
-    } catch (error) {
-      console.warn(RESET_VERSION, 'cache cleanup failed', error);
-    }
-    await self.clients.claim();
+      await Promise.all(keys.filter(k => k.startsWith('nox-vault')).map(k => caches.delete(k)));
+    } catch (_) {}
+    try { await self.registration.unregister(); } catch (_) {}
+    try {
+      const windows = await self.clients.matchAll({type: 'window', includeUncontrolled: true});
+      for (const client of windows) client.navigate(client.url);
+    } catch (_) {}
   })());
 });

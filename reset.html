@@ -1,45 +1,33 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#071120">
-  <title>Nox Vault Reset</title>
-  <style>
-    :root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#050b14;color:#eaf1ff}.box{width:min(620px,calc(100% - 32px));padding:32px;border:1px solid #17345d;border-radius:20px;background:linear-gradient(180deg,#0b1729,#08111e);box-shadow:0 24px 80px #0008}.mark{width:68px;height:68px;display:block;margin-bottom:18px}h1{margin:0 0 8px;font-size:30px}p{color:#95a9c8;line-height:1.55}.status{padding:14px 16px;border:1px solid #1b3b66;border-radius:12px;background:#071326;margin:18px 0;white-space:pre-wrap}.ok{color:#61dda4}.bad{color:#ff7b91}button,a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:10px;border:1px solid #326de8;background:#2461eb;color:white;text-decoration:none;font-weight:700;cursor:pointer}a{margin-left:8px;background:transparent}
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Nox Vault Reset</title>
+<style>
+body{margin:0;background:#071120;color:#eef4ff;font:16px system-ui;display:grid;place-items:center;min-height:100vh}.card{max-width:680px;padding:28px;border:1px solid #1c3b68;border-radius:18px;background:#0b1728;box-shadow:0 20px 70px #0008}button,a{font:inherit}.btn{border:1px solid #326cff;background:#164dc5;color:white;padding:12px 16px;border-radius:10px;cursor:pointer}.log{margin-top:18px;padding:14px;border-radius:10px;background:#050b14;white-space:pre-wrap;color:#a9c7ff}
+</style>
 </head>
-<body>
-  <main class="box">
-    <img class="mark" src="./assets/nox-mark.svg" alt="">
-    <h1>Nox Vault browser reset</h1>
-    <p>This removes older Nox Vault service workers and cached JavaScript from this browser. It does not delete Firebase data, vaults, sessions, notes, or images.</p>
-    <div id="status" class="status">Ready.</div>
-    <button id="reset">Clear old app cache</button><a href="./">Return to Nox Vault</a>
-  </main>
-  <script>
-    const status=document.getElementById('status');
-    document.getElementById('reset').onclick=async()=>{
-      try{
-        status.textContent='Removing service workers and caches…';
-        let unregistered=0,deleted=0;
-        if('serviceWorker' in navigator){
-          const regs=await navigator.serviceWorker.getRegistrations();
-          for(const reg of regs){if(await reg.unregister())unregistered++;}
-        }
-        if('caches' in window){
-          const keys=await caches.keys();
-          for(const key of keys){if(await caches.delete(key))deleted++;}
-        }
-        status.className='status ok';
-        status.textContent=`Reset complete. Removed ${unregistered} service worker registration(s) and ${deleted} cache(s).\nReloading Nox Vault…`;
-        setTimeout(()=>location.replace('./?cache_reset='+Date.now()),900);
-      }catch(error){
-        status.className='status bad';
-        status.textContent='Reset failed: '+(error?.message||error);
+<body><main class="card"><h1>Nox Vault browser reset</h1><p>This removes only Nox Vault service workers and browser caches for this GitHub Pages path. It does not delete Firebase data.</p><button id="reset" class="btn">Clear old Nox Vault cache</button><div id="log" class="log">Ready.</div></main>
+<script>
+const log=document.getElementById('log');
+document.getElementById('reset').onclick=async()=>{
+  const base=new URL('./',location.href).href;
+  const lines=[];
+  try{
+    if('serviceWorker' in navigator){
+      const regs=await navigator.serviceWorker.getRegistrations();
+      for(const r of regs){
+        if(r.scope.startsWith(base)){ lines.push('Unregistering '+r.scope); await r.unregister(); }
       }
-    };
-  </script>
-</body>
-</html>
+    }
+    if('caches' in window){
+      const keys=await caches.keys();
+      for(const k of keys){ if(k.startsWith('nox-vault')){ lines.push('Deleting cache '+k); await caches.delete(k); } }
+    }
+    lines.push('Done. Redirecting to a cache-busted Nox Vault URL…');
+    log.textContent=lines.join('\n');
+    setTimeout(()=>location.href='./?fresh='+Date.now(),800);
+  }catch(e){log.textContent='Reset failed: '+(e?.stack||e)}
+};
+</script></body></html>
