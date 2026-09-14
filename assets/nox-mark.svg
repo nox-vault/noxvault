@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Nox Vault">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#55c9ff"/>
+      <stop offset="0.48" stop-color="#3478ff"/>
+      <stop offset="1" stop-color="#6758ff"/>
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="4" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <path d="M64 11 116 104H12L64 11Zm0 24L32.8 91h62.4L64 35Z" fill="url(#g)" filter="url(#glow)"/>
+  <path d="M64 51 83 85H45L64 51Z" fill="url(#g)"/>
+</svg>
