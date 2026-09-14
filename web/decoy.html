@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#101827" />
+  <title>Knowledge Hub</title>
+  <link rel="stylesheet" href="./css/decoy.css" />
+</head>
+<body>
+  <div class="decoy-shell">
+    <aside>
+      <div class="decoy-brand">◈ <b>Knowledge Hub</b></div>
+      <button class="active">▤ Dashboard</button><button>▱ Documents</button><button>✎ Notes</button><button>□ Calendar</button><button>⌘ Calculator</button>
+      <div class="grow"></div><button>⚙ Settings</button>
+    </aside>
+    <main>
+      <header><input placeholder="Search workspace…"><span id="decoy-date"></span></header>
+      <section class="hero"><p>Productivity Today</p><h1 id="decoy-time">10:24</h1><p class="muted">A focused workspace for notes, documents and planning.</p></section>
+      <section class="grid">
+        <article><h3>Documents</h3><strong>24</strong><p>Recently updated resources</p></article>
+        <article><h3>Tasks</h3><strong>8</strong><p>Items scheduled this week</p></article>
+        <article><h3>Notes</h3><strong>17</strong><p>Reference and planning notes</p></article>
+        <article><h3>Calendar</h3><strong>5</strong><p>Upcoming events</p></article>
+      </section>
+      <section class="panel"><h2>Recent activity</h2><div class="rows"><div>Project outline updated <span>12 min ago</span></div><div>Research notes created <span>1 hour ago</span></div><div>Weekly plan reviewed <span>Yesterday</span></div></div></section>
+    </main>
+  </div>
+  <script>
+    const fmt=()=>{const d=new Date();document.querySelector('#decoy-time').textContent=d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});document.querySelector('#decoy-date').textContent=d.toLocaleDateString([], {weekday:'long',month:'short',day:'numeric'});};fmt();setInterval(fmt,30000);
+    function matches(e,s){const parts=s.toLowerCase().split('+').map(x=>x.trim());return (!!e.ctrlKey===parts.includes('ctrl'))&& (!!e.shiftKey===parts.includes('shift'))&& (!!e.altKey===parts.includes('alt'))&& (!!e.metaKey===parts.includes('meta')) && parts.includes((e.code==='Space'?'space':e.key.toLowerCase()));}
+    addEventListener('keydown',e=>{const s=localStorage.getItem('nox_panic_shortcut')||'Ctrl+Shift+Space';if(matches(e,s)){e.preventDefault();location.href='./index.html#unlock';}});
+  </script>
+</body>
+</html>
