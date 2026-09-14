@@ -1,3 +1,4 @@
+// Nox Vault hotfix 2026-09-14: save-all parser compatibility fix
 import {backend} from './backend.js';
 import {$,$$,esc,fmtDate,timeAgo,uid,nowIso,normalizeUrl,sourceFromUrl,isDirectVideo,isHls,parseTags,shortcutMatches,prettyShortcut,downloadBlob,pickFile,sortBy,randomSubset} from './utils.js';
 
@@ -113,7 +114,97 @@ async function metadataIntoTab(tab){toast('Detecting page metadata…');try{cons
 function categoryChecks(selected=[],suggested=[]){return S.categories.map(c=>`<label class="badge ${suggested.includes(c.name)?'green':'blue'}" style="cursor:pointer"><input type="checkbox" name="cat" value="${c.id}" ${selected.includes(c.id)||suggested.includes(c.name)?'checked':''}> ${esc(c.name)}</label>`).join('')}
 async function saveItemModal(tabOrItem){const source=tabOrItem.url;const m=modal(`<h2>Save to Vault</h2><p>Nox Vault can suggest a title, tags and categories from public page metadata. You can edit everything before saving.</p><div class="notice" id="meta-status">Fetching metadata…</div><form id="save-item-form" class="form-grid" style="margin-top:12px"><label class="full">Title<input name="title" required value="${esc(tabOrItem.title||sourceFromUrl(source))}"></label><label class="full">URL<input name="url" type="url" required value="${esc(source)}"></label><label>Embed URL<input name="embedUrl" type="url" value="${esc(tabOrItem.embedUrl||'')}"></label><label>Direct media URL<input name="mediaUrl" type="url" value="${esc(tabOrItem.mediaUrl||'')}"></label><div class="full"><span class="smalltext muted">Categories</span><div class="tag-cloud" id="category-checks" style="margin-top:7px">${categoryChecks(tabOrItem.categoryIds||tabOrItem.categories||[])}</div></div><label class="full">Tags<input name="tags" value="${esc((tabOrItem.tags||[]).join(', '))}" placeholder="tag 1, tag 2"></label><label class="full">Notes<textarea name="notes" rows="3">${esc(tabOrItem.notes||'')}</textarea></label><label><span>Favorite</span><input name="favorite" type="checkbox" ${tabOrItem.favorite?'checked':''}></label><label><span>Duplicate policy</span><select name="dup" class="select"><option value="skip">Skip if already saved</option><option value="update">Update existing item</option></select></label><div class="form-actions full"><button type="button" class="btn ghost" data-close>Cancel</button><button class="btn primary" type="submit">Save Item</button></div></form>`,{wide:true});m.querySelector('[data-close]').onclick=()=>m.remove();let meta=null;try{meta=await backend.fetchMetadata(source);const f=m.querySelector('form');if(meta.title)f.title.value=meta.title;if(meta.embedUrl&&!f.embedUrl.value)f.embedUrl.value=meta.embedUrl;if(meta.mediaUrl&&!f.mediaUrl.value)f.mediaUrl.value=meta.mediaUrl;f.tags.value=[...new Set([...parseTags(f.tags.value),...(meta.tags||[])])].join(', ');m.querySelector('#category-checks').innerHTML=categoryChecks(tabOrItem.categoryIds||tabOrItem.categories||[],meta.suggestedCategories||[]);m.querySelector('#meta-status').textContent=`Suggestions ready from ${meta.source||sourceFromUrl(source)}.`}catch(err){m.querySelector('#meta-status').textContent=`Metadata detection was unavailable: ${err.message}`}
   m.querySelector('form').onsubmit=async e=>{e.preventDefault();const b=e.submitter;setBusy(b,true,'Saving…');try{const fd=new FormData(e.target),cats=[...e.target.querySelectorAll('input[name=cat]:checked')].map(x=>x.value);const d={title:fd.get('title'),url:fd.get('url'),embedUrl:fd.get('embedUrl'),mediaUrl:fd.get('mediaUrl'),categories:cats,tags:parseTags(fd.get('tags')),notes:fd.get('notes'),favorite:fd.get('favorite')==='on',thumbnail:meta?.thumbnail||tabOrItem.thumbnail||'',source:meta?.source||sourceFromUrl(fd.get('url'))};const r=await backend.saveItem(S.currentVaultId,d,{skipIfExists:fd.get('dup')==='skip'});S.items=await backend.listItems(S.currentVaultId,true);m.remove();toast(r.status==='skipped'?'Already saved — skipped.':'Saved to library.','success')}catch(err){toast(err.message,'error')}finally{setBusy(b,false)}}}
-function saveAllTabsModal(){if(!S.activeSession?.tabs?.length){toast('No tabs to save.');return}modal(`<h2>Save All Session Tabs</h2><p>Duplicates are skipped. Only new URLs are copied into the library.</p><form class="form-grid"><label class="full">Category<select class="select" name="category"><option value="">No category</option>${S.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select></label><label class="full"><span>Metadata</span><select class="select" name="metadata"><option value="yes">Detect title/tags for each tab</option><option value="no">Use current tab titles only</option></select></label><div class="form-actions full"><button class="btn primary">Save ${S.activeSession.tabs.length} Tabs</button></div></form>`,{onOpen:r=>r.querySelector('form').onsubmit=async e=>{e.preventDefault();const b=e.submitter,fd=new FormData(e.target),cat=fd.get('category');setBusy(b,true,'Saving…');let saved=0,skipped=0,failed=0;for(const t of S.activeSession.tabs){try{let meta={};if(fd.get('metadata')==='yes'){try{meta=await backend.fetchMetadata(t.url)}catch{}}const result=await backend.saveItem(S.currentVaultId,{title:meta.title||t.title||sourceFromUrl(t.url),url:t.url,embedUrl:meta.embedUrl||t.embedUrl||'',mediaUrl:meta.mediaUrl||t.mediaUrl||'',thumbnail:meta.thumbnail||t.thumbnail||'',source:meta.source||sourceFromUrl(t.url),categories:cat?[cat]:[],tags:[...new Set([...(t.tags||[]),...(meta.tags||[])])]}, {skipIfExists:true});result.status==='skipped'?skipped++:saved++}catch{failed++}}S.items=await backend.listItems(S.currentVaultId,true);r.remove();toast(`${saved} saved · ${skipped} skipped · ${failed} failed`,failed?'':'success')}}})}
+function saveAllTabsModal(){
+  if(!S.activeSession || !S.activeSession.tabs || !S.activeSession.tabs.length){
+    toast('No tabs to save.');
+    return;
+  }
+
+  const html=`<h2>Save All Session Tabs</h2>
+    <p>Duplicates are skipped. Only new URLs are copied into the library.</p>
+    <form class="form-grid">
+      <label class="full">Category
+        <select class="select" name="category">
+          <option value="">No category</option>
+          ${S.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}
+        </select>
+      </label>
+      <label class="full"><span>Metadata</span>
+        <select class="select" name="metadata">
+          <option value="yes">Detect title/tags for each tab</option>
+          <option value="no">Use current tab titles only</option>
+        </select>
+      </label>
+      <div class="form-actions full">
+        <button class="btn primary" type="submit">Save ${S.activeSession.tabs.length} Tabs</button>
+      </div>
+    </form>`;
+
+  modal(html,{
+    onOpen:function(root){
+      const form=root.querySelector('form');
+      form.onsubmit=async function(e){
+        e.preventDefault();
+        const button=e.submitter;
+        const fd=new FormData(e.target);
+        const categoryId=fd.get('category');
+        setBusy(button,true,'Saving…');
+
+        let saved=0;
+        let skipped=0;
+        let failed=0;
+
+        try{
+          for(const tab of S.activeSession.tabs){
+            try{
+              let meta={};
+              if(fd.get('metadata')==='yes'){
+                try{
+                  meta=await backend.fetchMetadata(tab.url);
+                }catch(metaError){
+                  console.warn('Metadata lookup failed for',tab.url,metaError);
+                }
+              }
+
+              const result=await backend.saveItem(
+                S.currentVaultId,
+                {
+                  title:meta.title||tab.title||sourceFromUrl(tab.url),
+                  url:tab.url,
+                  embedUrl:meta.embedUrl||tab.embedUrl||'',
+                  mediaUrl:meta.mediaUrl||tab.mediaUrl||'',
+                  thumbnail:meta.thumbnail||tab.thumbnail||'',
+                  source:meta.source||sourceFromUrl(tab.url),
+                  categories:categoryId?[categoryId]:[],
+                  tags:[...new Set([...(tab.tags||[]),...(meta.tags||[])])]
+                },
+                {skipIfExists:true}
+              );
+
+              if(result.status==='skipped') skipped+=1;
+              else saved+=1;
+            }catch(saveError){
+              console.error('Could not save tab',tab.url,saveError);
+              failed+=1;
+            }
+          }
+
+          S.items=await backend.listItems(S.currentVaultId,true);
+          root.remove();
+          toast(
+            `${saved} saved · ${skipped} skipped · ${failed} failed`,
+            failed?'':'success'
+          );
+        }catch(err){
+          console.error(err);
+          toast(err.message||'Could not save session tabs.','error');
+        }finally{
+          setBusy(button,false);
+        }
+      };
+    }
+  });
+}
 
 function renderLibrary(){const q=S.search.trim().toLowerCase(),items=activeItems().filter(i=>!q||[i.title,i.url,i.source,...(i.tags||[]),...itemCategories(i)].join(' ').toLowerCase().includes(q));page.innerHTML=`${pageHeader('Library','All saved links, videos and references in the current vault.','<button class="btn primary" data-add-link>＋ Save Link</button>')}
   <div class="filters"><input id="library-search" type="text" placeholder="Search saved items…" value="${esc(S.search)}"><select id="lib-category" class="select"><option value="">All Categories</option>${S.categories.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select><select id="lib-filter" class="select"><option value="all">All Items</option><option value="favorites">Favorites</option><option value="never">Never Viewed</option><option value="recent">Recently Viewed</option></select><button class="btn ghost" data-random>Random</button></div>
