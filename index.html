@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#071120" />
   <meta name="referrer" content="no-referrer" />
   <title>Nox Vault</title>
-  <meta name="nox-build" content="20260915-v10-legacy-extension" />
+  <meta name="nox-build" content="20260915-v11-vault-options" />
   <link rel="icon" href="./assets/nox-mark.svg" type="image/svg+xml" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./css/app-v8.css?v=20260915-v8-extension" />
+  <link rel="stylesheet" href="./css/app-v11.css?v=20260915-v11-vault-options" />
 </head>
 <body>
   <noscript>Nox Vault requires JavaScript.</noscript>
@@ -52,7 +52,7 @@
         <a data-route="privacy" href="#privacy"><span>♢</span>Privacy</a>
       </nav>
       <button id="panic-btn" class="panic-button"><span>◉̸</span><div><strong>Panic Hide</strong><small id="panic-shortcut-label">Ctrl + Shift + Space</small></div></button>
-      <div class="version">Nox Vault v1.3.2<br><span>Silence stores more.</span></div>
+      <div class="version">Nox Vault v1.3.3<br><span>Silence stores more.</span></div>
     </aside>
 
     <main class="workspace">
@@ -78,9 +78,9 @@
   </template>
 
   <script type="module">
-    // Nox Vault build 2026-09-15 v1.3.2 — legacy Chrome extension-first browsing; service workers remain disabled.
+    // Nox Vault build 2026-09-15 v1.3.3 — optional vault passwords, per-vault NSFW, legacy Chrome companion; service workers remain disabled.
     // Remove any older Nox Vault worker/cache first, then load uniquely named app modules.
-    const build = '20260915-v10-legacy-extension';
+    const build = '20260915-v11-vault-options';
     const base = new URL('./', location.href).href;
     let removedOldWorker = false;
 
@@ -106,7 +106,7 @@
       sessionStorage.setItem('nox-nosw-reloaded', build);
       location.reload();
     } else {
-      await import(`./js/app-v10.js?v=${build}`);
+      await import(`./js/app-v11.js?v=${build}`);
     }
   </script>
 </body>
