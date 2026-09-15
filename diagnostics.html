@@ -11,7 +11,7 @@
 <body>
   <div class="card">
     <h1>Nox Vault diagnostics</h1>
-    <p class="muted">Build 20260915-0432-v6. This page does not display your Firebase API key or password.</p>
+    <p class="muted">Build 20260915-v7. This page does not display your Firebase API key or password.</p>
     <div id="results">Running checks…</div>
     <p><a href="./">Return to Nox Vault</a></p>
   </div>
@@ -19,8 +19,10 @@
     const root=document.querySelector('#results');
     const row=(name,value,ok=true)=>`<div class="row"><span>${name}</span><strong class="${ok?'ok':'bad'}">${value}</strong></div>`;
     try{
-      const cfg=await import('./js/firebase-config.js?v=20260915-0432');
-      const fb=await import('./js/firebase-v6.js?v=20260915-0432');
+      const cfg=await import('./js/firebase-config.js?v=20260915-v7');
+      const fb=await import('./js/firebase-v7.js?v=20260915-v7');
+      const be=await import('./js/backend-v7.js?v=20260915-v7');
+      const resolver=be.backend.resolveUrl('https://xhamster.com/videos/example-xhABC123');
       const configured=Boolean(cfg.firebaseConfig?.apiKey && !String(cfg.firebaseConfig.apiKey).startsWith('PASTE_') && cfg.firebaseConfig?.projectId);
       root.innerHTML=[
         row('JavaScript modules','Loaded',true),
@@ -30,7 +32,8 @@
         row('Demo mode',String(fb.demoMode),!fb.demoMode),
         row('Firebase SDK',fb.firebaseInitError?'Failed':'Initialized',!fb.firebaseInitError),
         row('Auth object',fb.auth?'Ready':'Unavailable',Boolean(fb.auth)||fb.demoMode),
-        row('Firestore object',fb.db?'Ready':'Unavailable',Boolean(fb.db)||fb.demoMode)
+        row('Firestore object',fb.db?'Ready':'Unavailable',Boolean(fb.db)||fb.demoMode),
+        row('Local embed resolver',resolver?.embedUrl==='https://xhamster.com/embed/xhABC123'?'Ready':'Unexpected',resolver?.embedUrl==='https://xhamster.com/embed/xhABC123')
       ].join('') + (fb.firebaseInitError?`<p class="bad"><code>${String(fb.firebaseInitError.message||fb.firebaseInitError)}</code></p>`:'');
     }catch(error){
       root.innerHTML=row('Diagnostics','Failed',false)+`<p class="bad"><code>${String(error?.stack||error)}</code></p>`;

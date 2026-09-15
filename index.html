@@ -6,10 +6,10 @@
   <meta name="theme-color" content="#071120" />
   <meta name="referrer" content="no-referrer" />
   <title>Nox Vault</title>
-  <meta name="nox-build" content="20260915-0432-v6" />
+  <meta name="nox-build" content="20260915-v7" />
   <link rel="icon" href="./assets/nox-mark.svg" type="image/svg+xml" />
   <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="stylesheet" href="./css/app.css?v=20260915-0432" />
+  <link rel="stylesheet" href="./css/app-v7.css?v=20260915-v7" />
 </head>
 <body>
   <noscript>Nox Vault requires JavaScript.</noscript>
@@ -51,7 +51,7 @@
         <a data-route="privacy" href="#privacy"><span>♢</span>Privacy</a>
       </nav>
       <button id="panic-btn" class="panic-button"><span>◉̸</span><div><strong>Panic Hide</strong><small id="panic-shortcut-label">Ctrl + Shift + Space</small></div></button>
-      <div class="version">Nox Vault v1.1.0<br><span>Silence stores more.</span></div>
+      <div class="version">Nox Vault v1.2.0<br><span>Silence stores more.</span></div>
     </aside>
 
     <main class="workspace">
@@ -79,7 +79,7 @@
   <script type="module">
     // Nox Vault build 2026-09-14 17:01 — service workers are intentionally disabled.
     // Remove any older Nox Vault worker/cache first, then load uniquely named app modules.
-    const build = '20260915-0432-v6';
+    const build = '20260915-v7';
     const base = new URL('./', location.href).href;
     let removedOldWorker = false;
 
@@ -105,7 +105,7 @@
       sessionStorage.setItem('nox-nosw-reloaded', build);
       location.reload();
     } else {
-      await import(`./js/app-v6.js?v=${build}`);
+      await import(`./js/app-v7.js?v=${build}`);
     }
   </script>
 </body>
