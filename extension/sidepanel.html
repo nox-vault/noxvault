@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Nox Vault Companion</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header class="brandbar">
+    <div class="mark">N</div>
+    <div><strong>Nox Vault</strong><small>Browser Companion</small></div>
+    <button id="open-options" class="icon-btn" title="Extension settings">⚙</button>
+  </header>
+
+  <main>
+    <section id="setup-view" class="card hidden">
+      <h2>Finish extension setup</h2>
+      <p>The extension needs the same Firebase Web API key as your Nox Vault website.</p>
+      <button id="setup-options" class="btn primary wide">Open Extension Settings</button>
+    </section>
+
+    <section id="login-view" class="card hidden">
+      <h2>Sign in</h2>
+      <p>Use the same Firebase Authentication account as Nox Vault.</p>
+      <form id="login-form" class="stack">
+        <label>Email<input id="email" type="email" autocomplete="username" required></label>
+        <label>Password<input id="password" type="password" autocomplete="current-password" required></label>
+        <button class="btn primary wide">Sign in</button>
+        <div id="login-msg" class="message"></div>
+      </form>
+    </section>
+
+    <section id="vault-view" class="card hidden">
+      <h2>Unlock a vault</h2>
+      <label>Vault<select id="vault-select"></select></label>
+      <form id="vault-form" class="stack">
+        <label>Vault password<input id="vault-password" type="password" autocomplete="current-password" required></label>
+        <button class="btn primary wide">Unlock vault</button>
+        <div id="vault-msg" class="message"></div>
+      </form>
+    </section>
+
+    <div id="main-view" class="hidden">
+      <section class="card compact-card">
+        <div class="row between">
+          <div><small class="eyebrow">CURRENT VAULT</small><strong id="vault-name">—</strong></div>
+          <button id="change-vault" class="btn tiny ghost">Change</button>
+        </div>
+      </section>
+
+      <section class="card current-card">
+        <div class="thumb-wrap"><img id="page-thumb" alt="" class="hidden"><div id="thumb-fallback" class="thumb-fallback">N</div></div>
+        <div class="page-copy">
+          <small id="page-source" class="eyebrow">Current page</small>
+          <h2 id="page-title">Scanning current page…</h2>
+          <div id="page-url" class="url-line"></div>
+        </div>
+        <div class="row gap wrap">
+          <button id="rescan" class="btn ghost">↻ Rescan</button>
+          <button id="open-web" class="btn ghost">Open Web App</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-title"><h3>Save current page</h3><span id="save-status" class="pill">Ready</span></div>
+        <label>Title<input id="save-title"></label>
+        <label>Category<select id="category-select"><option value="">No category</option></select></label>
+        <label>Tags<input id="tags" placeholder="tag 1, tag 2"></label>
+        <div class="two-col">
+          <label>Rating<select id="rating"><option value="0">No rating</option><option value="1">★</option><option value="2">★★</option><option value="3">★★★</option><option value="4">★★★★</option><option value="5">★★★★★</option></select></label>
+          <label class="checkline"><input id="favorite" type="checkbox"> Favorite</label>
+        </div>
+        <label>Notes<textarea id="notes" rows="3"></textarea></label>
+        <button id="save-current" class="btn primary wide">☆ Save current page</button>
+        <button id="save-window" class="btn ghost wide">Save all live tabs in this window</button>
+        <button id="save-managed" class="btn ghost wide">Save entire managed session to Library</button>
+        <div id="save-msg" class="message"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-title"><h3>Session browser</h3><span id="pool-badge" class="pill">No session</span></div>
+        <label>Saved session<select id="session-select"><option value="">Choose session…</option></select></label>
+        <div class="row gap">
+          <button id="open-session" class="btn primary grow">Open Session</button>
+          <button id="save-window-session" class="btn ghost grow">Save Window as Session</button>
+        </div>
+        <div class="row gap session-controls">
+          <button id="prev-item" class="btn icon">⏮</button>
+          <button id="random-item" class="btn grow ghost">Random</button>
+          <button id="next-item" class="btn icon">⏭</button>
+        </div>
+        <div id="session-items" class="session-list"></div>
+      </section>
+
+      <section class="card">
+        <div class="section-title"><h3>Related on this page</h3><span id="related-count" class="pill">0</span></div>
+        <div id="related-list" class="related-list"></div>
+      </section>
+
+      <section class="card danger-card">
+        <div class="section-title"><h3>Privacy</h3><span class="pill danger">Panic</span></div>
+        <p class="muted">Closes the managed Nox browsing slots and opens your configured decoy page.</p>
+        <button id="panic" class="btn danger wide">◉̸ Panic Hide</button>
+        <button id="restore-hidden" class="btn ghost wide">Restore hidden session</button>
+      </section>
+
+      <button id="logout" class="text-btn">Sign out of extension</button>
+    </div>
+  </main>
+
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>

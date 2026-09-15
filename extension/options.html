@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nox Vault Extension Settings</title><link rel="stylesheet" href="options.css"></head>
+<body>
+  <main class="wrap">
+    <div class="brand"><div class="mark">N</div><div><h1>Nox Vault Companion</h1><p>Extension settings</p></div></div>
+    <section class="card">
+      <h2>Firebase</h2>
+      <p>The extension uses Firebase Authentication and Firestore REST directly. Paste the same Web API key already used by your Nox Vault website. The API key is not a Firebase Admin secret.</p>
+      <form id="config-form">
+        <label>Firebase Web API key<input id="apiKey" required placeholder="AIza…"></label>
+        <label>Project ID<input id="projectId" required></label>
+        <label>Owner UID<input id="ownerUid" required></label>
+        <label>Nox web app URL<input id="webAppUrl" type="url" required></label>
+        <label>Decoy page URL<input id="decoyUrl" type="url" required></label>
+        <button class="btn">Save settings</button><span id="status"></span>
+      </form>
+    </section>
+    <section class="card">
+      <h2>Keyboard shortcut</h2>
+      <p>The default Panic Hide shortcut is <b>Ctrl + Shift + Y</b>. Chrome lets you change it under <code>chrome://extensions/shortcuts</code>.</p>
+    </section>
+  </main>
+  <script type="module" src="options.js"></script>
+</body>
+</html>
