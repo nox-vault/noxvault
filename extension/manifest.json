@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
-  "name": "Nox Vault Companion",
-  "version": "1.3.0",
-  "description": "Private Nox Vault side panel, metadata saver, related-video helper and RAM-conscious session browser.",
-  "minimum_chrome_version": "114",
-  "permissions": ["sidePanel", "tabs", "storage", "scripting", "windows"],
+  "name": "Nox Vault Companion (Legacy Chrome)",
+  "version": "1.3.3",
+  "description": "Nox Vault in-page sidebar, metadata saver, related-video helper and RAM-conscious session browser for older Chrome versions.",
+  "minimum_chrome_version": "88",
+  "permissions": ["tabs", "storage", "scripting", "windows"],
   "host_permissions": [
     "http://*/*",
     "https://*/*",
@@ -16,11 +16,8 @@
     "service_worker": "background.js",
     "type": "module"
   },
-  "side_panel": {
-    "default_path": "sidepanel.html"
-  },
   "action": {
-    "default_title": "Open Nox Vault Side Panel",
+    "default_title": "Toggle Nox Vault Sidebar",
     "default_icon": {
       "16": "icons/nox-16.png",
       "32": "icons/nox-32.png",
@@ -42,10 +39,20 @@
       "run_at": "document_idle"
     }
   ],
+  "web_accessible_resources": [
+    {
+      "resources": ["sidepanel.html", "sidepanel.css", "sidepanel.js", "icons/*"],
+      "matches": ["http://*/*", "https://*/*"]
+    }
+  ],
   "commands": {
     "panic-hide": {
       "suggested_key": { "default": "Ctrl+Shift+Y" },
       "description": "Hide the managed Nox session and open the decoy page"
+    },
+    "toggle-sidebar": {
+      "suggested_key": { "default": "Ctrl+Shift+U" },
+      "description": "Show or hide the Nox sidebar on the current page"
     }
   }
 }

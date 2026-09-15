@@ -2,6 +2,15 @@ import { getRuntimeConfig, configReady } from './config.js';
 
 const AUTH_KEY = 'noxAuth';
 const UNLOCK_KEY = 'noxUnlockedVaults';
+const transient = chrome.storage.session || chrome.storage.local;
+
+function uuid() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const bytes = new Uint8Array(16); crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40; bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const h = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+}
 
 function b64ToBytes(value = '') {
   const raw = atob(value);
@@ -102,7 +111,7 @@ async function saveAuthRecord(record) {
 
 export async function logout() {
   await chrome.storage.local.remove(AUTH_KEY);
-  await chrome.storage.session.remove(UNLOCK_KEY);
+  await transient.remove(UNLOCK_KEY);
 }
 
 export async function login(email, password) {
@@ -230,9 +239,10 @@ export async function getVault(vaultId) {
   return getDoc([...root(auth.uid), 'vaults', vaultId]);
 }
 
-export async function verifyVaultPassword(vaultId, password) {
+export async function verifyVaultPassword(vaultId, password = '') {
   const vault = await getVault(vaultId);
-  if (!vault?.lockHash || !vault?.lockSalt) return false;
+  if (!vault?.lockHash || !vault?.lockSalt) return true;
+  if (String(password ?? '').length < 2) return false;
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
   const bits = await crypto.subtle.deriveBits({
     name: 'PBKDF2', salt: b64ToBytes(vault.lockSalt), iterations: Number(vault.lockIterations || 210000), hash: 'SHA-256'
@@ -244,14 +254,14 @@ export async function verifyVaultPassword(vaultId, password) {
 }
 
 export async function setVaultUnlocked(vaultId, unlocked = true) {
-  const saved = await chrome.storage.session.get(UNLOCK_KEY);
+  const saved = await transient.get(UNLOCK_KEY);
   const ids = new Set(saved[UNLOCK_KEY] || []);
   if (unlocked) ids.add(vaultId); else ids.delete(vaultId);
-  await chrome.storage.session.set({ [UNLOCK_KEY]: [...ids] });
+  await transient.set({ [UNLOCK_KEY]: [...ids] });
 }
 
 export async function isVaultUnlocked(vaultId) {
-  const saved = await chrome.storage.session.get(UNLOCK_KEY);
+  const saved = await transient.get(UNLOCK_KEY);
   return (saved[UNLOCK_KEY] || []).includes(vaultId);
 }
 
@@ -284,7 +294,7 @@ export async function listSessions(vaultId) {
 
 export async function saveSession(vaultId, data) {
   const auth = await getAuth();
-  const id = data.id || crypto.randomUUID();
+  const id = data.id || uuid();
   const existing = await getDoc([...vaultPath(auth.uid, vaultId, 'sessions'), id]);
   const row = {
     id,

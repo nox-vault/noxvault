@@ -125,11 +125,49 @@
     };
   }
 
+  const SIDEBAR_ID = 'nox-vault-legacy-sidebar-root';
+  let sidebarHost = null;
+
+  function sidebarVisible() { return Boolean(sidebarHost && sidebarHost.isConnected && sidebarHost.style.display !== 'none'); }
+  function ensureSidebar() {
+    if (sidebarHost && sidebarHost.isConnected) { sidebarHost.style.display = 'block'; return sidebarHost; }
+    const old = document.getElementById(SIDEBAR_ID);
+    if (old) old.remove();
+    const host = document.createElement('div');
+    host.id = SIDEBAR_ID;
+    host.setAttribute('data-nox-vault-extension', 'legacy-sidebar');
+    Object.assign(host.style, {
+      position: 'fixed', top: '0', right: '0', bottom: '0', width: '390px', maxWidth: '92vw',
+      zIndex: '2147483647', background: '#071120', boxShadow: '-16px 0 40px rgba(0,0,0,.45)',
+      borderLeft: '1px solid rgba(98,168,255,.24)', display: 'block'
+    });
+    const frame = document.createElement('iframe');
+    frame.src = chrome.runtime.getURL('sidepanel.html');
+    frame.title = 'Nox Vault Companion';
+    frame.setAttribute('allow', 'clipboard-read; clipboard-write');
+    Object.assign(frame.style, { width: '100%', height: '100%', border: '0', background: '#071120', display: 'block' });
+    host.appendChild(frame);
+    (document.documentElement || document.body).appendChild(host);
+    sidebarHost = host;
+    return host;
+  }
+  function hideSidebar() { if (sidebarHost && sidebarHost.isConnected) sidebarHost.style.display = 'none'; }
+  function toggleSidebar() { if (sidebarVisible()) { hideSidebar(); return false; } ensureSidebar(); return true; }
+
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (message?.type === 'NOX_SCAN_PAGE') {
+    if (message && message.type === 'NOX_SCAN_PAGE') {
       try { sendResponse({ ok: true, data: scanPage() }); }
-      catch (error) { sendResponse({ ok: false, error: error?.message || String(error) }); }
+      catch (error) { sendResponse({ ok: false, error: error && error.message || String(error) }); }
+      return;
     }
+    if (message && message.type === 'NOX_SHOW_SIDEBAR') { ensureSidebar(); sendResponse({ ok: true, visible: true }); return; }
+    if (message && message.type === 'NOX_HIDE_SIDEBAR') { hideSidebar(); sendResponse({ ok: true, visible: false }); return; }
+    if (message && message.type === 'NOX_TOGGLE_SIDEBAR') { const visible = toggleSidebar(); sendResponse({ ok: true, visible }); return; }
+  });
+
+  chrome.runtime.sendMessage({ type: 'NOX_SHOULD_AUTO_SHOW' }, response => {
+    if (chrome.runtime.lastError) return;
+    if (response && response.show) ensureSidebar();
   });
 
   const allowedWebBridge = () => location.hostname === 'nox-vault.github.io' && location.pathname.startsWith('/noxvault');

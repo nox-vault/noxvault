@@ -9,8 +9,8 @@
 <body>
   <header class="brandbar">
     <div class="mark">N</div>
-    <div><strong>Nox Vault</strong><small>Browser Companion</small></div>
-    <button id="open-options" class="icon-btn" title="Extension settings">⚙</button>
+    <div><strong>Nox Vault</strong><small>In-page Companion</small></div>
+    <div class="header-actions"><button id="open-options" class="icon-btn" title="Extension settings">⚙</button><button id="close-sidebar" class="icon-btn" title="Hide Nox sidebar">×</button></div>
   </header>
 
   <main>
@@ -35,7 +35,7 @@
       <h2>Unlock a vault</h2>
       <label>Vault<select id="vault-select"></select></label>
       <form id="vault-form" class="stack">
-        <label>Vault password<input id="vault-password" type="password" autocomplete="current-password" required></label>
+        <label>Vault password<input id="vault-password" type="password" autocomplete="current-password" minlength="2" required autofocus></label>
         <button class="btn primary wide">Unlock vault</button>
         <div id="vault-msg" class="message"></div>
       </form>

@@ -5,6 +5,15 @@ import {
 } from './firebase-rest.js';
 
 const $ = s => document.querySelector(s);
+const vaultHasPassword = v => Boolean(v && (v.lockHash || v.hasPassword));
+
+function uuid() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const bytes = new Uint8Array(16); crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40; bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const h = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0,8)}-${h.slice(8,12)}-${h.slice(12,16)}-${h.slice(16,20)}-${h.slice(20)}`;
+}
 const state = {
   auth: null, vaults: [], vaultId: '', vault: null, categories: [], sessions: [], settings: {}, scan: null, windowId: null, managed: null
 };
@@ -104,6 +113,7 @@ async function loadVaultData() {
   state.sessions = await listSessions(state.vaultId);
   state.settings = await getSettings().catch(() => ({ maxActiveTabs: 3 }));
   renderCategories(); renderSessionsSelect();
+  document.body.classList.toggle('nsfw', Boolean(state.vault?.nsfw));
   $('#vault-name').textContent = state.vault?.name || 'Vault';
   await scanCurrentPage();
   await refreshManaged();
@@ -112,8 +122,14 @@ async function chooseVault(id) {
   state.vaultId = id;
   state.vault = state.vaults.find(v => v.id === id) || null;
   await chrome.storage.local.set({ noxExtensionVaultId: id });
+  if (state.vault && !vaultHasPassword(state.vault)) {
+    await setVaultUnlocked(id, true);
+    show('main-view');
+    await loadVaultData();
+    return;
+  }
   if (await isVaultUnlocked(id)) { show('main-view'); await loadVaultData(); }
-  else { $('#vault-select').value = id; show('vault-view'); }
+  else { $('#vault-select').value = id; show('vault-view'); requestAnimationFrame(()=>$('#vault-password')?.focus()); }
 }
 async function bootstrap() {
   const config = await getRuntimeConfig();
@@ -123,12 +139,17 @@ async function bootstrap() {
   state.vaults = await listVaults();
   const saved = await chrome.storage.local.get('noxExtensionVaultId');
   const selected = state.vaults.find(v => v.id === saved.noxExtensionVaultId)?.id || state.vaults[0]?.id;
-  $('#vault-select').innerHTML = state.vaults.map(v=>`<option value="${esc(v.id)}">${esc(v.name)}</option>`).join('');
+  $('#vault-select').innerHTML = state.vaults.map(v=>`<option value="${esc(v.id)}">${esc(v.name)}${vaultHasPassword(v)?' 🔒':''}</option>`).join('');
   if (!selected) { show('vault-view'); setMessage('#vault-msg','No vaults exist yet. Create one in the Nox web app.'); return; }
   await chooseVault(selected);
 }
 
 $('#open-options').onclick = () => chrome.runtime.openOptionsPage();
+$('#close-sidebar').onclick = async () => {
+  const tab = await currentTab();
+  if (tab && tab.id) await chrome.tabs.sendMessage(tab.id, { type: 'NOX_HIDE_SIDEBAR' }).catch(() => {});
+  await chrome.runtime.sendMessage({ type: 'SET_SIDEBAR_VISIBLE', payload: { windowId: state.windowId, visible: false } }).catch(() => {});
+};
 $('#setup-options').onclick = () => chrome.runtime.openOptionsPage();
 $('#login-form').onsubmit = async e => {
   e.preventDefault(); setMessage('#login-msg','Signing in…');
@@ -140,8 +161,13 @@ $('#vault-form').onsubmit = async e => {
   e.preventDefault(); setMessage('#vault-msg','Checking password…');
   try {
     const id = $('#vault-select').value;
-    if (!await verifyVaultPassword(id, $('#vault-password').value)) throw new Error('Incorrect vault password.');
-    await setVaultUnlocked(id, true); state.vaultId = id; state.vault = state.vaults.find(v=>v.id===id); $('#vault-password').value=''; show('main-view'); await loadVaultData();
+    state.vault = state.vaults.find(v=>v.id===id) || null;
+    if (state.vault && !vaultHasPassword(state.vault)) {
+      await setVaultUnlocked(id, true);
+    } else if (!await verifyVaultPassword(id, $('#vault-password').value)) {
+      throw new Error('Incorrect vault password.');
+    }
+    await setVaultUnlocked(id, true); state.vaultId = id; $('#vault-password').value=''; show('main-view'); await loadVaultData();
   } catch (error) { setMessage('#vault-msg', error.message); }
 };
 $('#change-vault').onclick = async () => { $('#vault-select').value = state.vaultId; show('vault-view'); };
@@ -195,7 +221,7 @@ $('#save-window-session').onclick = async () => {
     const tabs=(await chrome.tabs.query({currentWindow:true})).filter(t=>/^https?:/i.test(t.url||''));
     if(!tabs.length) throw new Error('No normal web tabs in this window.');
     const name=prompt('Session name','Browser Session'); if(!name)return;
-    const row=await saveSession(state.vaultId,{name,tabs:tabs.map(t=>({id:crypto.randomUUID(),url:t.url,title:t.title||t.url,thumbnail:'',tags:[],categoryIds:[],status:'suspended'})),categoryIds:[]});
+    const row=await saveSession(state.vaultId,{name,tabs:tabs.map(t=>({id:uuid(),url:t.url,title:t.title||t.url,thumbnail:'',tags:[],categoryIds:[],status:'suspended'})),categoryIds:[]});
     state.sessions=await listSessions(state.vaultId); renderSessionsSelect(); $('#session-select').value=row.id; setMessage('#save-msg','Window saved as a Nox session.',true);
   } catch(error){ setMessage('#save-msg',error.message); }
 };

@@ -3,7 +3,7 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Nox Vault Extension Settings</title><link rel="stylesheet" href="options.css"></head>
 <body>
   <main class="wrap">
-    <div class="brand"><div class="mark">N</div><div><h1>Nox Vault Companion</h1><p>Extension settings</p></div></div>
+    <div class="brand"><div class="mark">N</div><div><h1>Nox Vault Companion</h1><p>Legacy Chrome · in-page sidebar</p></div></div>
     <section class="card">
       <h2>Firebase</h2>
       <p>The extension uses Firebase Authentication and Firestore REST directly. Paste the same Web API key already used by your Nox Vault website. The API key is not a Firebase Admin secret.</p>
@@ -16,9 +16,10 @@
         <button class="btn">Save settings</button><span id="status"></span>
       </form>
     </section>
+    <section class="card"><h2>How the sidebar works</h2><p>This build is compatible with older Chrome versions that do not have the Chrome Side Panel API. Click the Nox extension icon on any normal website to show or hide Nox directly on top of the current page. Your video still plays on the original website.</p></section>
     <section class="card">
-      <h2>Keyboard shortcut</h2>
-      <p>The default Panic Hide shortcut is <b>Ctrl + Shift + Y</b>. Chrome lets you change it under <code>chrome://extensions/shortcuts</code>.</p>
+      <h2>Keyboard shortcuts</h2>
+      <p>Panic Hide defaults to <b>Ctrl + Shift + Y</b>. Toggle Nox Sidebar defaults to <b>Ctrl + Shift + U</b>. Chrome lets you change them under <code>chrome://extensions/shortcuts</code>.</p>
     </section>
   </main>
   <script type="module" src="options.js"></script>
