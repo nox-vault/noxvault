@@ -11,7 +11,7 @@
 <body>
   <div class="card">
     <h1>Nox Vault diagnostics</h1>
-    <p class="muted">Build 20260915-v9-extension-download. This page does not display your Firebase API key or password.</p>
+    <p class="muted">Build 20260915-v10-legacy-extension. This page does not display your Firebase API key or password.</p>
     <div id="results">Running checks…</div>
     <p><a href="./">Return to Nox Vault</a></p>
   </div>
@@ -19,9 +19,9 @@
     const root=document.querySelector('#results');
     const row=(name,value,ok=true)=>`<div class="row"><span>${name}</span><strong class="${ok?'ok':'bad'}">${value}</strong></div>`;
     try{
-      const cfg=await import('./js/firebase-config.js?v=20260915-v9-extension-download');
-      const fb=await import('./js/firebase-v8.js?v=20260915-v9-extension-download');
-      const be=await import('./js/backend-v8.js?v=20260915-v9-extension-download');
+      const cfg=await import('./js/firebase-config.js?v=20260915-v10-legacy-extension');
+      const fb=await import('./js/firebase-v8.js?v=20260915-v10-legacy-extension');
+      const be=await import('./js/backend-v8.js?v=20260915-v10-legacy-extension');
       const configured=Boolean(cfg.firebaseConfig?.apiKey && !String(cfg.firebaseConfig.apiKey).startsWith('PASTE_') && cfg.firebaseConfig?.projectId);
       root.innerHTML=[
         row('JavaScript modules','Loaded',true),
@@ -42,7 +42,7 @@
         window.postMessage({source:'nox-vault-web',requestId,type:'PING',payload:{}},location.origin);
       });
       root.insertAdjacentHTML('beforeend',row('Chrome Companion',bridge?.ok?`Connected v${bridge.version||''}`:'Not detected (web app still works)',Boolean(bridge?.ok)));
-      try{const r=await fetch('./downloads/nox-vault-companion-extension-v1.3.zip',{method:'HEAD',cache:'no-store'});root.insertAdjacentHTML('beforeend',row('Companion download',r.ok?'Available':'Missing',r.ok));}catch{root.insertAdjacentHTML('beforeend',row('Companion download','Unavailable',false));}
+      try{const r=await fetch('./downloads/nox-vault-companion-extension-legacy-v1.3.2.zip',{method:'HEAD',cache:'no-store'});root.insertAdjacentHTML('beforeend',row('Legacy companion download',r.ok?'Available':'Missing',r.ok));}catch{root.insertAdjacentHTML('beforeend',row('Legacy companion download','Unavailable',false));}
     }catch(error){
       root.innerHTML=row('Diagnostics','Failed',false)+`<p class="bad"><code>${String(error?.stack||error)}</code></p>`;
     }
