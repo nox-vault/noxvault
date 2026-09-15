@@ -11,7 +11,7 @@
 <body>
   <div class="card">
     <h1>Nox Vault diagnostics</h1>
-    <p class="muted">Build 20260914-1735-v5. This page does not display your Firebase API key or password.</p>
+    <p class="muted">Build 20260915-0432-v6. This page does not display your Firebase API key or password.</p>
     <div id="results">Running checks…</div>
     <p><a href="./">Return to Nox Vault</a></p>
   </div>
@@ -19,8 +19,8 @@
     const root=document.querySelector('#results');
     const row=(name,value,ok=true)=>`<div class="row"><span>${name}</span><strong class="${ok?'ok':'bad'}">${value}</strong></div>`;
     try{
-      const cfg=await import('./js/firebase-config.js?v=20260914-1735');
-      const fb=await import('./js/firebase-v5.js?v=20260914-1735');
+      const cfg=await import('./js/firebase-config.js?v=20260915-0432');
+      const fb=await import('./js/firebase-v6.js?v=20260915-0432');
       const configured=Boolean(cfg.firebaseConfig?.apiKey && !String(cfg.firebaseConfig.apiKey).startsWith('PASTE_') && cfg.firebaseConfig?.projectId);
       root.innerHTML=[
         row('JavaScript modules','Loaded',true),
